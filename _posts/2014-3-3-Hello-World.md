@@ -3,8 +3,11 @@ layout: post
 title: Network Data Science
 ---
 
-Next you can update your site name, avatar and other options using the _config.yml file in the root of your repository (shown below).
 
-![_config.yml]({{ site.baseurl }}/images/config.png)
+    * [[Early Detection of Spam Domains with Passive DNS and SPF]]
+    * [[Novel Approach for Network Traffic Pattern Analysis using Clustering-based Collective Anomaly Detection]]
+    * [[Detecting_IP-tracking_proof_interfaces_by_looking_for_NATs]]
+    * [[Poisson-Based Anomaly Detection for Identifying Malicious User Behaviour]]
+    * [[A First Look at Class Incremental Learning in Deep Learning Mobile Traffic Classification]]
 
-The easiest way to make your first post is to edit this one. Go into /_posts/ and update the Hello World markdown file. For more instructions head over to the [Jekyll Now repository](https://github.com/barryclark/jekyll-now) on GitHub.
+
