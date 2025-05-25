@@ -134,11 +134,17 @@ Variational Autoencoder (VAE), Anomaly Transformer, Naive Bayes를 결합한 앙
 ```
 
 📦project-root/
+
 ┣ 📂data/                 # 세션 및 포트 통계 수집 데이터
+
 ┣ 📂models/               # 모델 정의 (VAE, Transformer 등)
+
 ┣ 📂notebooks/            # 분석용 Jupyter 노트북
+
 ┣ main.py                # 메인 실행 스크립트
+
 ┗ README.md              # 프로젝트 설명서
+
 
 ````
 
