@@ -120,15 +120,12 @@
 ---
 
 
----
-
 
 ```markdown
 # 🔍 망분리 환경 이상 트래픽 탐지 시스템
 
-본 프로젝트는 내부망과 인터넷망이 물리적으로 분리된 망분리(Network Segregation) 환경에서 발생할 수 있는 이상 트래픽 및 보안 위협을 실시간으로 탐지하고 차단하는 시스템을 구현합니다.
-
-VAE(Variational Autoencoder), Anomaly Transformer, Naive Bayes 모델을 결합한 앙상블 기법을 통해 암호화 트래픽 및 내부 위협까지 탐지 가능하며, 다층적 보안 관제를 제공합니다.
+본 프로젝트는 망분리(Network Segregation) 환경에서 발생 가능한 이상 트래픽 및 내부 보안 위협을 실시간으로 탐지하고 차단하는 시스템을 구현합니다.  
+Variational Autoencoder (VAE), Anomaly Transformer, Naive Bayes를 결합한 앙상블 기반의 탐지 프레임워크를 통해 **암호화된 트래픽**, **네트워크 혼용**, **비인가 단말 접속** 등의 위협에 효과적으로 대응합니다.
 
 ---
 
@@ -137,39 +134,42 @@ VAE(Variational Autoencoder), Anomaly Transformer, Naive Bayes 모델을 결합�
 ```
 
 📦project-root/
-┣ 📂data/                    # 세션 및 포트 통계 데이터
-┣ 📂models/                  # VAE, Transformer, Naive Bayes 모델 코드
-┣ 📂notebooks/               # 분석용 Jupyter Notebook
-┣ main.py                   # 전체 시스템 실행 스크립트
-┗ README.md                 # 프로젝트 설명
+┣ 📂data/                 # 세션 및 포트 통계 수집 데이터
+┣ 📂models/               # 모델 정의 (VAE, Transformer 등)
+┣ 📂notebooks/            # 분석용 Jupyter 노트북
+┣ main.py                # 메인 실행 스크립트
+┗ README.md              # 프로젝트 설명서
 
 ````
 
 ---
 
-## 📊 수집 데이터
+## 📊 데이터 설명
 
-- **세션 데이터 (session_data.csv)**
-  - 총 82개 변수 포함
-  - 패킷 수, 전송 바이트 수, TCP 플래그, 세션 지속 시간 등 포함
-- **스위치 포트 통계 데이터 (port_stats.csv)**
-  - 시간대별 트래픽, 오류, 브로드캐스트/멀티캐스트 패킷 수
+### ✅ 세션 데이터 (session_data.csv)
+- 총 82개 필드로 구성
+- 주요 항목:
+  - `duration`, `tcp_flags_ack`, `client_bytes`, `server_bytes`, `packets`, `bytes_total` 등
+- 트래픽 흐름을 수치화한 데이터 → VAE 학습에 사용
+
+### ✅ 포트 통계 데이터 (port_stats.csv)
+- SNMP 기반 수집
+- 주요 항목:
+  - `broadcast_packets`, `multicast_packets`, `packet_errors`, `port_traffic_in/out`
+- 스위치 포트별 이상 징후 탐지에 활용
 
 ---
 
-## 💡 예시 코드: 세션 데이터 전처리 및 스케일링
+## 💡 예시 코드
 
 ```python
+# 세션 데이터 전처리 및 스케일링 예제
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-# 세션 데이터 불러오기
 df = pd.read_csv("data/session_data.csv")
 
-# 주요 feature 추출
 features = df[['duration', 'tcp_flags_ack', 'client_bytes', 'server_bytes']]
-
-# 정규화
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(features)
 
@@ -181,28 +181,35 @@ print("스케일링 완료:", X_scaled.shape)
 ## 🚀 실행 방법
 
 ```bash
-# 전체 파이프라인 실행
+# 전체 파이프라인 학습 모드 실행
 $ python main.py --mode train
 
+# 실시간 이상 탐지 모드 실행
+$ python main.py --mode detect
 ```
 
 ---
 
-## 🧠 주요 모델 구성
+## 🧠 모델 구성 요약
 
-| 모듈                  | 설명                   | 역할          |
-| ------------------- | -------------------- | ----------- |
-| VAE                 | 비지도 학습 기반 재구성 오차 분석  | 세션 이상 탐지    |
-| Anomaly Transformer | 시계열 연관성 불일치 기반 이상 탐지 | 세션 흐름 이상 탐지 |
-| Naive Bayes         | 단말별 이상 확률 계산         | 위험 단말 우선순위화 |
+| 구성 요소     | 기법                  | 역할              |
+| --------- | ------------------- | --------------- |
+| 🔹 세션 분석  | VAE                 | 정상/비정상 세션 구분    |
+| 🔹 시계열 분석 | Anomaly Transformer | 세션 흐름 기반 이상 탐지  |
+| 🔹 단말 판단  | Naive Bayes         | 이상 확률 기반 단말 순위화 |
 
 ---
 
-## 🛡️ 활용 시나리오
+## 🛡️ 적용 시나리오
 
-* 내부망과 외부망이 혼용된 접속 탐지
-* 비인가 장비(NAT 공유기 등) 실시간 탐지
-* 서버 접근 패턴을 벗어난 이상 사용자 행위 탐지
-* 스위치 포트 트래픽 급증, 오류 탐지
+* ✅ 내부 업무망에 외부망 혼용 여부 자동 탐지
+* ✅ 비인가 NAT 공유기·허브 탐지 및 경고
+* ✅ 서버 접근 패턴 기반 이상 단말 탐지
+* ✅ 포트별 트래픽 급증, 오류 패턴 탐지
+
+---
+
+
+```
 
 ---
