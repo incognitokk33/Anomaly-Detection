@@ -293,10 +293,11 @@ $ python main.py --mode train
 (이상 단말 차단, 관리자 경고 등)
 ```
 
-> **📌 Note(그림4)**
-> 『A Real-time Multidimensional Data-driven Probabilistic Network Anomaly Detection Framework』
+**📌 Note(그림4)**
 
-> ![image](https://github.com/user-attachments/assets/fd4fdaa4-6884-4052-a352-b013cf90ff2e)
+『A Real-time Multidimensional Data-driven Probabilistic Network Anomaly Detection Framework』
+
+ ![image](https://github.com/user-attachments/assets/fd4fdaa4-6884-4052-a352-b013cf90ff2e)
 
 
 
