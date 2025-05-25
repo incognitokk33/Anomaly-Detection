@@ -295,7 +295,9 @@ $ python main.py --mode train
 
 > **📌 Note(그림4)**
 > 『A Real-time Multidimensional Data-driven Probabilistic Network Anomaly Detection Framework』
-![image](https://github.com/user-attachments/assets/fd4fdaa4-6884-4052-a352-b013cf90ff2e)
+
+> ![image](https://github.com/user-attachments/assets/fd4fdaa4-6884-4052-a352-b013cf90ff2e)
+
 
 
 
