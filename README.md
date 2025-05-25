@@ -118,3 +118,91 @@
   * AI 기반 모델을 보완하는 빠르고 효율적인 탐지 방법으로 활용됩니다.
 
 ---
+
+
+---
+
+
+```markdown
+# 🔍 망분리 환경 이상 트래픽 탐지 시스템
+
+본 프로젝트는 내부망과 인터넷망이 물리적으로 분리된 망분리(Network Segregation) 환경에서 발생할 수 있는 이상 트래픽 및 보안 위협을 실시간으로 탐지하고 차단하는 시스템을 구현합니다.
+
+VAE(Variational Autoencoder), Anomaly Transformer, Naive Bayes 모델을 결합한 앙상블 기법을 통해 암호화 트래픽 및 내부 위협까지 탐지 가능하며, 다층적 보안 관제를 제공합니다.
+
+---
+
+## 📁 프로젝트 구조
+
+```
+
+📦project-root/
+┣ 📂data/                    # 세션 및 포트 통계 데이터
+┣ 📂models/                  # VAE, Transformer, Naive Bayes 모델 코드
+┣ 📂notebooks/               # 분석용 Jupyter Notebook
+┣ main.py                   # 전체 시스템 실행 스크립트
+┗ README.md                 # 프로젝트 설명
+
+````
+
+---
+
+## 📊 수집 데이터
+
+- **세션 데이터 (session_data.csv)**
+  - 총 82개 변수 포함
+  - 패킷 수, 전송 바이트 수, TCP 플래그, 세션 지속 시간 등 포함
+- **스위치 포트 통계 데이터 (port_stats.csv)**
+  - 시간대별 트래픽, 오류, 브로드캐스트/멀티캐스트 패킷 수
+
+---
+
+## 💡 예시 코드: 세션 데이터 전처리 및 스케일링
+
+```python
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# 세션 데이터 불러오기
+df = pd.read_csv("data/session_data.csv")
+
+# 주요 feature 추출
+features = df[['duration', 'tcp_flags_ack', 'client_bytes', 'server_bytes']]
+
+# 정규화
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(features)
+
+print("스케일링 완료:", X_scaled.shape)
+````
+
+---
+
+## 🚀 실행 방법
+
+```bash
+# 전체 파이프라인 실행
+$ python main.py --mode train
+
+```
+
+---
+
+## 🧠 주요 모델 구성
+
+| 모듈                  | 설명                   | 역할          |
+| ------------------- | -------------------- | ----------- |
+| VAE                 | 비지도 학습 기반 재구성 오차 분석  | 세션 이상 탐지    |
+| Anomaly Transformer | 시계열 연관성 불일치 기반 이상 탐지 | 세션 흐름 이상 탐지 |
+| Naive Bayes         | 단말별 이상 확률 계산         | 위험 단말 우선순위화 |
+
+---
+
+## 🛡️ 활용 시나리오
+
+* 내부망과 외부망이 혼용된 접속 탐지
+* 비인가 장비(NAT 공유기 등) 실시간 탐지
+* 서버 접근 패턴을 벗어난 이상 사용자 행위 탐지
+* 스위치 포트 트래픽 급증, 오류 탐지
+
+---
