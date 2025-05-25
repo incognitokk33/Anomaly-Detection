@@ -176,11 +176,9 @@ print("스케일링 완료:", X_scaled.shape)
 ## 🚀 실행 방법
 
 ```bash
-# 전체 파이프라인 학습 모드 실행
+# 전체 파이프라인 학습 모드 실행(구현중)
 $ python main.py --mode train
 
-# 실시간 이상 탐지 모드 실행
-$ python main.py --mode detect
 ```
 
 ---
