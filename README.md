@@ -119,9 +119,6 @@
 
 ---
 
-
-
-```markdown
 # 🔍 망분리 환경 이상 트래픽 탐지 시스템
 
 본 프로젝트는 망분리(Network Segregation) 환경에서 발생 가능한 이상 트래픽 및 내부 보안 위협을 실시간으로 탐지하고 차단하는 시스템을 구현합니다.  
@@ -132,21 +129,13 @@ Variational Autoencoder (VAE), Anomaly Transformer, Naive Bayes를 결합한 앙
 ## 📁 프로젝트 구조
 
 ```
-
 📦project-root/
-
-┣ 📂data/                 # 세션 및 포트 통계 수집 데이터
-
-┣ 📂models/               # 모델 정의 (VAE, Transformer 등)
-
-┣ 📂notebooks/            # 분석용 Jupyter 노트북
-
-┣ main.py                # 메인 실행 스크립트
-
-┗ README.md              # 프로젝트 설명서
-
-
-````
+ ┣ 📂data/                 # 세션 및 포트 통계 수집 데이터
+ ┣ 📂models/               # 모델 정의 (VAE, Transformer 등)
+ ┣ 📂notebooks/            # 분석용 Jupyter 노트북
+ ┣ main.py                # 메인 실행 스크립트
+ ┗ README.md              # 프로젝트 설명서
+```
 
 ---
 
@@ -180,7 +169,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(features)
 
 print("스케일링 완료:", X_scaled.shape)
-````
+```
 
 ---
 
@@ -198,24 +187,24 @@ $ python main.py --mode detect
 
 ## 🧠 모델 구성 요약
 
-| 구성 요소     | 기법                  | 역할              |
-| --------- | ------------------- | --------------- |
-| 🔹 세션 분석  | VAE                 | 정상/비정상 세션 구분    |
-| 🔹 시계열 분석 | Anomaly Transformer | 세션 흐름 기반 이상 탐지  |
-| 🔹 단말 판단  | Naive Bayes         | 이상 확률 기반 단말 순위화 |
+| 구성 요소     | 기법                 | 역할                             |
+|---------------|----------------------|----------------------------------|
+| 🔹 세션 분석  | VAE                  | 정상/비정상 세션 구분           |
+| 🔹 시계열 분석| Anomaly Transformer | 세션 흐름 기반 이상 탐지       |
+| 🔹 단말 판단  | Naive Bayes          | 이상 확률 기반 단말 순위화     |
 
 ---
 
 ## 🛡️ 적용 시나리오
 
-* ✅ 내부 업무망에 외부망 혼용 여부 자동 탐지
-* ✅ 비인가 NAT 공유기·허브 탐지 및 경고
-* ✅ 서버 접근 패턴 기반 이상 단말 탐지
-* ✅ 포트별 트래픽 급증, 오류 패턴 탐지
+- ✅ 내부 업무망에 외부망 혼용 여부 자동 탐지  
+- ✅ 비인가 NAT 공유기·허브 탐지 및 경고  
+- ✅ 서버 접근 패턴 기반 이상 단말 탐지  
+- ✅ 포트별 트래픽 급증, 오류 패턴 탐지
 
 ---
 
+## 📎 참고 문헌
 
-```
+- Xu, Jiehui et al. (2022). *Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy*  
 
----
