@@ -213,6 +213,115 @@ while True:
 
 ---
 
+## 💡 학습을 위해 세션 데이터 추출 및 전처리 작업
+```python
+import pandas as pd
+import numpy as np
+from collections import defaultdict
+
+keys_to_extract = [
+    "firstPacket", "lastPacket", "length", "ipProtocol", 'srcOuiCnt', 'dstOuiCnt',
+    "tcpflags_syn", "tcpflags_syn-ack", "tcpflags_ack", "tcpflags_psh", "tcpflags_fin",
+    "tcpflags_rst", "tcpflags_urg", "tcpflags_srcZero", "tcpflags_dstZero", "initRTT",
+    "source_bytes", "source_packets", "destination_bytes", "destination_packets","destination_mac-cnt",
+    "network_packets", "network_bytes", "client_bytes", "server_bytes", "totDataBytes",
+    "segmentCnt", "http_bodyMagicCnt", "http_clientVersionCnt", "http_hostCnt",
+    "http_keyCnt", "http_methodCnt", "http_pathCnt", "http_request-content-typeCnt",
+    "http_request-refererCnt", "http_requestHeaderCnt", "http_response-content-typeCnt",
+    "http_responseHeaderCnt", "http_serverVersionCnt", "http_statuscodeCnt", "http_uriCnt",
+    "http_useragentCnt", "protocolCnt",  "http_authTypeCnt",
+    "http_request-authorizationCnt", "http_userCnt", "srcDscpCnt", "ssh_hasshCnt",
+    "ssh_hasshServerCnt", "ssh_versionCnt", "tls_cipherCnt", "tls_ja3Cnt",
+    "tls_versionCnt",    "protocol_str_concat", 'destination_port' # Include other keys as needed
+]
+
+# 평탄화 함수 정의
+def flatten_json(y, parent_key='', sep='_'):
+    items = {}
+    for key, value in y.items():
+        new_key = f"{parent_key}{sep}{key}" if parent_key else key
+        if isinstance(value, dict):
+            items.update(flatten_json(value, new_key, sep=sep))
+        elif isinstance(value, list):
+            num_sum = sum(item for item in value if isinstance(item, (int, float)))
+            str_concat = ','.join(str(item) for item in value if isinstance(item, str))
+            items[f'{new_key}_num_sum'] = num_sum
+            items[f'{new_key}_str_concat'] = str_concat
+        else:
+            items[new_key] = value
+    return items
+
+# 데이터 추출 및 평탄화를 위한 함수 정의
+def extract_and_flatten(json_data):
+    extracted_data = {}
+    flat_data = flatten_json(json_data['_source'])
+    for key in keys_to_extract:
+        value = flat_data.get(key, 0)  # 값이 없을 경우 0을 입력
+        extracted_data[key] = value
+    return extracted_data
+
+# 데이터 병합을 위한 함수 정의
+def merge_json_data(json_list):
+    data_list = []
+    for json_data in json_list:
+        extracted_data = extract_and_flatten(json_data)
+        data_list.append(extracted_data)
+    return pd.DataFrame(data_list)
+
+# 데이터 병합을 위한 함수 정의
+# def merge_json_data(json_list):
+#     merged_data = {}
+#     for data in json_list:
+#         flat_data = flatten_json(data['_source'])
+#         for key, value in flat_data.items():
+#             # 같은 키가 있으면 업데이트, 없으면 새로 추가
+#             merged_data[key] = value
+#     return pd.DataFrame([merged_data])
+
+
+
+# 병합할 JSON 데이터 리스트
+json_data_list = hits_list #[json_data_1,json_data_2,json_data_3,json_data_4,json_data_5,json_data_6]
+
+# 병합 함수 호출
+merged_df = merge_json_data(json_data_list)
+merged_df = pd.concat([merged_df] * 1, ignore_index=True)
+
+# "firstPacket"과 "lastPacket"의 차이값 계산 및 컬럼 추가
+merged_df['packetDuration'] = merged_df['lastPacket'] - merged_df['firstPacket']
+
+# 원래 "firstPacket"과 "lastPacket" 컬럼 제거
+merged_df = merged_df.drop(columns=['firstPacket', 'lastPacket'])
+
+# 'protocol_str_concat' 컬럼을 리스트로 변환
+merged_df['protocol_list'] = merged_df['protocol_str_concat'].str.split(',')
+# 'protocol_str_concat' 컬럼 삭제
+merged_df.drop(columns=['protocol_str_concat'], inplace=True)
+
+# 지정된 프로토콜 목록
+protocols = [
+    "http", "https", "ftp", "sftp", "smtp", "pop3", "imap",
+    "dns", "tcp", "udp", "ssh", "ssl", "telnet", "snmp", "icmp",
+    "bgp", "ospf", "rip", "sip", "voip", "rdp", "mqtt", "ldap",
+    "arp", "ip", "ethernet", "nfs", "smb", "quic", "ntp", "http/2", "http/3", "tls"
+]
+
+# 각 프로토콜을 컬럼으로 추가
+for protocol in protocols:
+    merged_df['pthot_'+protocol] = merged_df['protocol_list'].apply(lambda x: 1 if protocol in x else 0)
+
+
+columns_to_drop = [col for col in merged_df.columns if isinstance(merged_df[col][0], (list, str))]
+merged_df = merged_df.drop(columns=columns_to_drop)
+merged_df
+
+# 결과 확인
+print(merged_df.head())
+
+```
+---
+
+
 ## 🚀 실행 방법
 
 ```bash
