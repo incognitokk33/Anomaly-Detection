@@ -322,6 +322,60 @@ print(merged_df.head())
 ---
 
 
+## 💡 학습을 위해 세션 데이터 추출 및 전처리 작업
+```python
+# Interface names to filter
+interface_names = [ 
+    "GigabitEthernet1/0/12",
+    "GigabitEthernet1/0/13",
+    "GigabitEthernet1/0/14",
+    "GigabitEthernet1/0/17",
+    "GigabitEthernet1/0/18",
+    "GigabitEthernet1/0/22", #이부분이 192.168.0.17로 사용할 인터페이스 정보
+    "GigabitEthernet1/0/24",
+    "GigabitEthernet1/0/4",
+    "GigabitEthernet1/0/5",
+    "GigabitEthernet1/0/8"
+]
+
+# Filtering the DataFrame to include only rows where 'field_value' matches any of the interface names
+filtered_data_all_interfaces = df_switch_sensor_data[df_switch_sensor_data['field_value'].isin(interface_names)]
+# Assuming df_switch_sensor_data is already created and has a 'time' column with datetime strings
+
+# Convert 'time' column to datetime format
+filtered_data_all_interfaces['time'] = pd.to_datetime(filtered_data_all_interfaces['time'])
+
+# Format 'time' column to 'YYYY-MM-DD HH:MM' format
+filtered_data_all_interfaces['time'] = filtered_data_all_interfaces['time'].dt.strftime('%Y-%m-%d %H:%M')
+
+filtered_data_all_interfaces.head()  # Displaying the first few rows to verify the transformation
+# 'output' 컬럼을 숫자형으로 변환 (오류 발생 시 NaN으로 대체)
+filtered_data_all_interfaces['output'] = pd.to_numeric(filtered_data_all_interfaces['output'], errors='coerce')
+
+# 데이터 정렬 및 그룹화
+grouped = filtered_data_all_interfaces.sort_values('time').groupby(['traffic_type', 'field_value'])
+
+# 'output' 값의 시간대별 증가분을 계산
+filtered_data_all_interfaces['output_diff'] = grouped['output'].diff().fillna(0)
+
+# 32비트 초과 상황 감지 및 처리
+max_32bit_value = 2**32 - 1
+
+def adjust_negative_diff(row):
+    if row['output_diff'] < 0:
+        return row['output_diff'] + max_32bit_value + 1
+    return row['output_diff']
+
+filtered_data_all_interfaces['output_diff'] = filtered_data_all_interfaces.apply(adjust_negative_diff, axis=1)
+
+pivot_table = filtered_data_all_interfaces.pivot_table(
+    index=['field_value', 'time'],
+    columns='traffic_type',
+    values='output_diff',
+    aggfunc='sum'  # 또는 'mean', 'max', 'min' 등 원하는 집계 함수를 사용할 수 있습니다
+).reset_index()
+```
+
 ## 🚀 실행 방법
 
 ```bash
