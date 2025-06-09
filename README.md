@@ -620,7 +620,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 dataset = tf.data.Dataset.from_tensor_slices(data.values).shuffle(len(data)).batch(64)
 
 # 학습 루프
-num_epochs = 100  # 조정 가능
+num_epochs = 100  
 for epoch in range(num_epochs):
     for step, batch_data in enumerate(dataset):
         total_loss, recon_loss, kl_loss = train_step(vae, optimizer, batch_data)
