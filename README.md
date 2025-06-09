@@ -839,8 +839,6 @@ plt.tight_layout()
 
 plt.show()
 
-# 이미지 파일로 저장
-plt.savefig('naive_bayesian_probabilities_over_time_log_space.png', dpi=300)
 ```
 
 ---
