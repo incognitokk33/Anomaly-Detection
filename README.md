@@ -843,7 +843,7 @@ plt.show()
 ---
 
 
-![image](https://github.com/user-attachments/assets/8a40318e-fd02-49b3-8957-2757f669feaf)
+![image](https://github.com/user-attachments/assets/b174691f-03a6-418b-ace6-177408b4f738)
 
 ---
 
