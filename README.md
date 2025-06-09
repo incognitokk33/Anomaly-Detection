@@ -508,7 +508,141 @@ $ python main.py --mode train
 
 **예시 코드 삽입**:
 ```python
-# VAE 예시 코드
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Flatten, Reshape, BatchNormalization, Dropout
+from tensorflow.keras.models import Model
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
+# 데이터 스케일링 및 전처리
+data_scaling = merged_df.astype('float32')
+data = data_scaling.apply(min_max_scaling)
+
+class DenseBlock(Model):
+    def __init__(self, units, dropout_rate=0.3):
+        super(DenseBlock, self).__init__()
+        self.dense = Dense(units, activation=tf.nn.relu)
+        self.bn = BatchNormalization()
+        self.dropout = Dropout(dropout_rate)
+
+    def call(self, x):
+        x = self.dense(x)
+        x = self.bn(x)
+        return self.dropout(x)
+
+class Encoder(Model):
+    def __init__(self, latent_dim=10):
+        super(Encoder, self).__init__()
+        self.latent_dim = latent_dim
+        self.dense_block1 = DenseBlock(256, dropout_rate=0.3)
+        self.dense_block2 = DenseBlock(128, dropout_rate=0.3)
+        self.dense_block3 = DenseBlock(64, dropout_rate=0.3)  # 추가 계층
+        self.dense_output = Dense(units=self.latent_dim, activation=None)
+
+    def call(self, x):
+        x = self.dense_block1(x)
+        x = self.dense_block2(x)
+        x = self.dense_block3(x)  # 추가 계층 호출
+        return self.dense_output(x)
+
+class Decoder(Model):
+    def __init__(self, latent_dim=10):
+        super(Decoder, self).__init__()
+        self.dense_block1 = DenseBlock(64, dropout_rate=0.3)
+        self.dense_block2 = DenseBlock(128, dropout_rate=0.3)
+        self.dense_block3 = DenseBlock(256, dropout_rate=0.3)  # 추가 계층
+        self.dense_output = Dense(units=86, activation='sigmoid')  # 데이터에 따라 조정
+
+    def call(self, x):
+        x = self.dense_block1(x)
+        x = self.dense_block2(x)
+        x = self.dense_block3(x)  # 추가 계층 호출
+        return self.dense_output(x)
+
+class VAE(Model):
+    def __init__(self, latent_dim=10):
+        super(VAE, self).__init__()
+        self.latent_dim = latent_dim
+        self.encoder = Encoder(latent_dim=self.latent_dim)
+        self.decoder = Decoder(latent_dim=self.latent_dim)
+        self.dense_mu = Dense(units=self.latent_dim, activation=None)
+        self.dense_log_var = Dense(units=self.latent_dim, activation=None)
+
+    def reparameterize(self, mu, logvar):
+        eps = tf.random.normal(shape=mu.shape)
+        return eps * tf.exp(logvar * 0.5) + mu
+
+    def call(self, x):
+        x = self.encoder(x)
+        mu = self.dense_mu(x)
+        log_var = self.dense_log_var(x)
+        z = self.reparameterize(mu, log_var)
+        x_recon = self.decoder(z)
+        return x_recon, mu, log_var
+    
+    def encode(self, x):
+        x = self.encoder(x)
+        return self.dense_mu(x)
+
+# 손실 함수 및 학습 단계 정의
+def compute_loss(data, reconstruction, mu, log_var):
+    epsilon = 1e-7  # Small constant for numerical stability
+    recon_loss = tf.reduce_mean(tf.reduce_sum(tf.keras.losses.mean_squared_error(data, reconstruction), axis=-1))
+    kl_loss = -0.5 * (1 + log_var - tf.square(mu) - tf.exp(log_var + epsilon))
+    kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+    total_loss = recon_loss + kl_loss
+    return total_loss, recon_loss, kl_loss
+
+@tf.function
+def train_step(model, optimizer, data):
+    with tf.GradientTape() as tape:
+        reconstruction, mu, log_var = model(data)
+        data = tf.reshape(data, shape=(data.shape[0], -1))  # Ensuring shapes match
+        reconstruction = tf.reshape(reconstruction, shape=(reconstruction.shape[0], -1))
+        total_loss, recon_loss, kl_loss = compute_loss(data, reconstruction, mu, log_var)
+    gradients = tape.gradient(total_loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    return total_loss, recon_loss, kl_loss
+
+# 모델 및 옵티마이저 초기화
+latent_dim = 4  # 잠재 차원 크기 조정 가능
+vae = VAE(latent_dim=latent_dim)
+
+# 학습률 스케줄러 설정
+initial_learning_rate = 1e-4
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True)
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+
+# 데이터셋 준비 및 학습 루프
+dataset = tf.data.Dataset.from_tensor_slices(data.values).shuffle(len(data)).batch(64)
+
+# 학습 루프
+num_epochs = 100  # 조정 가능
+for epoch in range(num_epochs):
+    for step, batch_data in enumerate(dataset):
+        total_loss, recon_loss, kl_loss = train_step(vae, optimizer, batch_data)
+    print(f"Epoch: {epoch+1}, Total Loss: {total_loss.numpy()}, Recon Loss: {recon_loss.numpy()}, KL Loss: {kl_loss.numpy()}")
+
+# 잠재 공간 시각화
+def visualize_latent_space(model, data, num_samples=1000):
+    subset = data.sample(n=num_samples, random_state=42)  # 무작위 샘플 선택
+
+    mu = model.encode(subset).numpy()
+    
+    tsne = TSNE(n_components=2, perplexity=30, n_iter=300)
+    mu_tsne = tsne.fit_transform(mu)
+
+    plt.figure(figsize=(10, 8))
+    plt.scatter(mu_tsne[:, 0], mu_tsne[:, 1], alpha=0.5)
+    plt.title('Latent Space Representation using t-SNE')
+    plt.xlabel('Dimension 1')
+    plt.ylabel('Dimension 2')
+    plt.show()
+
+# visualize_latent_space(vae, data)
 ```
 
 ---
