@@ -701,7 +701,7 @@ https://github.com/thuml/Anomaly-Transformer
 
 ---
 
-## 🔹 스위치 포트 통계 데이터 기반 이상 탐지
+## 🔹 스위치 포트 통계 데이터 기반 이상 탐지 (Anomaly Transformer)
 
 - **스위치 포트 통계 데이터의 중요성**
 - **다변량 시계열 데이터 분석 방법**
