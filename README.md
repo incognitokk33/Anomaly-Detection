@@ -354,7 +354,7 @@ pivot_table = filtered_data_all_interfaces.pivot_table(
     index=['field_value', 'time'],
     columns='traffic_type',
     values='output_diff',
-    aggfunc='sum'  # 또는 'mean', 'max', 'min' 등 원하는 집계 함수를 사용할 수 있습니다
+    aggfunc='sum'  
 ).reset_index()
 ```
 
