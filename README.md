@@ -693,10 +693,11 @@ average_visits_per_hour['threshold'] = average_visits_per_hour['average_visits']
 - **Association Discrepancy 개념 설명**
 - **세션 흐름 데이터의 모델 학습 및 이상 탐지 과정**
 
-**예시 코드 삽입**:
-```python
-# Anomaly Transformer 사용 예제 
-```
+
+Anomaly-Transformer (ICLR 2022 Spotlight)
+
+https://github.com/thuml/Anomaly-Transformer
+
 
 ---
 
@@ -706,10 +707,9 @@ average_visits_per_hour['threshold'] = average_visits_per_hour['average_visits']
 - **다변량 시계열 데이터 분석 방법**
 - **이상 징후 판단 기준 및 탐지 방식**
 
-**예시 코드 삽입**:
-```python
-# 포트 통계 데이터 이상 탐지 코드 예제
-```
+Anomaly-Transformer (ICLR 2022 Spotlight)
+
+https://github.com/thuml/Anomaly-Transformer
 
 ---
 
@@ -721,7 +721,126 @@ average_visits_per_hour['threshold'] = average_visits_per_hour['average_visits']
 
 **예시 코드 삽입**:
 ```python
-# Naive Bayes 모델 활용 예제
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.special import softmax
+
+# 가중치(감마) 설정
+gamma_poisson_vae = 0.5  # VAE와 POISSON에 적용할 가중치
+gamma_sw_vae_mus = 1.0   # SW와 VAE_MUS에 적용할 가중치
+
+# 파일 경로 설정 및 CSV 파일 불러오기
+vae_df = pd.read_csv('NaiveBayesResults/VAE.csv', index_col=0)  # VAE.csv 파일 불러오기
+poisson_df = pd.read_csv('NaiveBayesResults/POISSON.csv', index_col=0)  # POISSON.csv 파일 불러오기
+sw_df = pd.read_csv('NaiveBayesResults/SW.csv', index_col=0)  # SW.csv 파일 불러오기
+vae_mus_df = pd.read_csv('NaiveBayesResults/VAE_MUS.csv', index_col=0)  # VAE_MUS.csv 파일 불러오기
+
+# 각 데이터프레임의 크기 확인 (디버깅용 출력)
+print("VAE shape:", vae_df.shape)
+print("POISSON shape:", poisson_df.shape)
+print("SW shape:", sw_df.shape)
+print("VAE_MUS shape:", vae_mus_df.shape)
+
+# 각 데이터프레임의 인덱스 (IP 주소) 확인 (디버깅용 출력)
+print("VAE IPs:", vae_df.index)
+print("POISSON IPs:", poisson_df.index)
+print("SW IPs:", sw_df.index)
+print("VAE_MUS IPs:", vae_mus_df.index)
+
+# IP 주소 중복 또는 누락 확인을 위한 통합 인덱스 비교
+common_ips = vae_df.index.intersection(poisson_df.index).intersection(sw_df.index).intersection(vae_mus_df.index)
+
+# 만약 공통 IP 개수가 예상보다 적을 경우 (9개인 경우), 문제 해결을 위해 결측값 처리 수행
+# 이 경우 각 데이터프레임을 공통 IP로 맞추지 않고, 모든 IP를 포함하도록 결측값을 채우는 방법을 사용
+combined_ips = vae_df.index.union(poisson_df.index).union(sw_df.index).union(vae_mus_df.index)
+
+# 각 데이터프레임의 결측값을 0으로 채워서 모든 IP를 포함하도록 처리
+vae_df_numeric = vae_df.reindex(combined_ips).fillna(0)
+poisson_df_numeric = poisson_df.reindex(combined_ips).fillna(0)
+sw_df_numeric = sw_df.reindex(combined_ips).fillna(0)
+vae_mus_df_numeric = vae_mus_df.reindex(combined_ips).fillna(0)
+
+# 데이터 가중치 적용
+vae_df_weighted = vae_df_numeric * gamma_poisson_vae  # VAE 데이터에 가중치 적용
+poisson_df_weighted = poisson_df_numeric * gamma_poisson_vae  # POISSON 데이터에 가중치 적용
+sw_df_weighted = sw_df_numeric * gamma_sw_vae_mus  # SW 데이터에 가중치 적용
+vae_mus_df_weighted = vae_mus_df_numeric * gamma_sw_vae_mus  # VAE_MUS 데이터에 가중치 적용
+
+# 네 개의 파일을 합산하여 하나의 DataFrame 생성 (숫자 데이터만)
+combined_df_numeric = vae_df_weighted + poisson_df_weighted + sw_df_weighted + vae_mus_df_weighted
+
+# 데이터의 크기 확인 (디버깅용 출력)
+print("Combined data shape:", combined_df_numeric.shape)  # (10, 200)인지 확인
+
+# Softmax 및 Z-score 정규화를 사용한 확률 계산 함수
+def calculate_initial_probabilities(data):
+    if np.all(data == data[0]):  # 만약 모든 값이 동일하다면
+        return np.ones_like(data) / len(data)  # 동일한 확률 분포
+    normalized_scores = (data - np.mean(data)) / (np.std(data) + 1e-10)  # Z-score 정규화
+    probabilities = softmax(normalized_scores)  # softmax로 확률 계산
+    return probabilities
+
+# 나이브 베이즈 업데이트 함수 (로그 공간에서 계산)
+def bayesian_update_log(prior_log, likelihood):
+    likelihood = np.clip(likelihood, 1e-10, 1.0)  # 확률 범위를 1e-10로 제한하여 log(0) 방지
+    posterior_log = prior_log + np.log(likelihood)  # 로그 확률을 더하여 posterior 계산
+    posterior_log -= np.max(posterior_log)  # overflow 방지를 위해 최대값을 빼줌
+    posterior = np.exp(posterior_log)  # posterior 값을 확률로 변환
+    return posterior / np.sum(posterior)  # 정규화
+
+# 시간대별로 나이브 베이즈 업데이트를 수행하는 함수
+def update_probabilities_over_time(data_df):
+    probability_history = []  # 확률 기록을 저장할 리스트
+    
+    # 첫 번째 시간대의 데이터를 기반으로 초기 확률 계산
+    initial_data = data_df.iloc[0]
+    initial_probabilities = calculate_initial_probabilities(initial_data)
+    
+    # 초기 확률을 log-space로 변환
+    prior_log = np.log(initial_probabilities + 1e-10)
+
+    # 각 시간대별로 나이브 베이즈 업데이트 수행
+    for t in range(1, len(data_df)):
+        new_data = data_df.iloc[t]  # 새로운 데이터 추출
+        likelihood = calculate_initial_probabilities(new_data)  # 새로운 데이터의 가능도 계산
+        prior_log = bayesian_update_log(prior_log, likelihood)  # 나이브 베이즈 업데이트
+        probability_history.append(prior_log)  # 업데이트된 확률 기록
+    
+    return np.array(probability_history)  # 확률 기록 반환
+
+# 나이브 베이즈 업데이트 실행 (시간대별로 계산)
+updated_probabilities = update_probabilities_over_time(combined_df_numeric.T)
+
+# 확률 업데이트 히스토리를 전치하여 IP별로 행, 시간별로 열이 되도록 변환
+updated_probabilities = updated_probabilities.T
+
+# 데이터의 크기 확인 (디버깅용 출력)
+print("Updated probabilities shape:", updated_probabilities.shape)  # (10, 200)인지 확인
+
+# 시각화 설정
+plt.figure(figsize=(60, 10))  # 그래프 크기 설정
+sns.set(font_scale=0.7)  # 글꼴 크기 조정
+
+# xticklabels의 뒤 두 자리만 표시 (00 ~ 99로 반복)
+xticklabels = [f'{i % 100}' for i in range(updated_probabilities.shape[1])]
+
+# 히트맵 시각화
+ax = sns.heatmap(updated_probabilities, xticklabels=xticklabels, 
+                 yticklabels=combined_ips, cmap='YlOrRd', vmin=0, vmax=1, 
+                 cbar_kws={'label': 'Probability', 'shrink': 0.4}, 
+                 linewidths=0.01, linecolor='black', square=True, annot=True, fmt=".2f", annot_kws={"size": 6})
+
+plt.title('Naive Bayesian Update of Probabilities over Time')
+plt.xlabel('Time')
+plt.ylabel('IP Address')
+plt.tight_layout()
+
+plt.show()
+
+# 이미지 파일로 저장
+plt.savefig('naive_bayesian_probabilities_over_time_log_space.png', dpi=300)
 ```
 
 ---
