@@ -155,20 +155,60 @@ Variational Autoencoder (VAE), Anomaly Transformer, Naive Bayes를 결합한 앙
 
 ---
 
-## 💡 예시 코드
-
+## 💡 fetch from akime server 
 ```python
-# 세션 데이터 전처리 및 스케일링 예제
+from elasticsearch import Elasticsearch
+from datetime import datetime
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+import numpy as np
+# Elasticsearch 호스트 및 포트 설정
+es = Elasticsearch(['http://192.168.0.0:9200'])
 
-df = pd.read_csv("data/session_data.csv")
+# 인덱스 이름, 페이지 크기, 시간 범위 및 특정 값 설정
+index_name = 'arkime_sessions3*'
+page_size = 500
+start_time = datetime(2024, 1, 1)  # 시작 시간 설정
+end_time = datetime(2024, 12, 31)  # 종료 시간 설정
+desired_value = 'your_desired_value'  # 가져오고자 하는 특정 값
 
-features = df[['duration', 'tcp_flags_ack', 'client_bytes', 'server_bytes']]
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(features)
+# Elasticsearch Scroll API를 사용하여 데이터 검색
+scroll_size = page_size
+scroll_timeout = "1m"  # 스크롤 타임아웃 설정
 
-print("스케일링 완료:", X_scaled.shape)
+response = es.search(
+    index=index_name,
+    scroll=scroll_timeout,
+    size=scroll_size,
+    body={
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "range": {
+                            "@timestamp": {
+                                "gte": start_time,
+                                "lte": end_time
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+)
+
+scroll_id = response.get('_scroll_id')
+
+hits_list = []
+while True:
+    # 스크롤 API를 사용하여 다음 페이지를 가져옵니다.
+    scroll_response = es.scroll(scroll_id=scroll_id, scroll=scroll_timeout)
+    hits = scroll_response['hits']['hits']
+    if not hits:
+        break  # 더 이상 데이터가 없으면 루프 종료
+    for hit in hits:
+        hits_list.append(hit)
+
 ```
 
 ---
