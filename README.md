@@ -655,7 +655,34 @@ def visualize_latent_space(model, data, num_samples=1000):
 
 **예시 코드 삽입**:
 ```python
-# Poisson 분포 적용 예제 
+import pandas as pd
+import numpy as np
+from scipy.stats import poisson
+
+# 예시 데이터 생성
+# data = read_csv(...)
+
+# 데이터 프레임으로 변환 및 전처리
+df = pd.DataFrame(data)
+df['@timestamp'] = pd.to_datetime(df['@timestamp'], unit='ms')
+df['source_ip'] = df['source'].apply(lambda x: x['ip'])
+df['destination_ip'] = df['destination'].apply(lambda x: x['ip'])
+df = df.drop(columns=['source', 'destination'])
+df['hour'] = df['@timestamp'].dt.hour
+
+# 시간대별 방문 빈도 계산
+visits_per_hour = df.groupby(['source_ip', 'destination_ip', 'hour']).size().reset_index(name='visits')
+
+# 시간대별 평균 방문 빈도 계산
+average_visits_per_hour = visits_per_hour.groupby(['source_ip', 'destination_ip', 'hour'])['visits'].mean().reset_index(name='average_visits')
+
+# 푸아송 분포를 사용하여 상위 95% 임계치 계산 함수
+def calculate_threshold(avg_visits):
+    return poisson.ppf(0.99, avg_visits)
+
+# 시간대별 상위 99% 임계치 계산
+average_visits_per_hour['threshold'] = average_visits_per_hour['average_visits'].apply(calculate_threshold)
+
 ```
 
 ---
