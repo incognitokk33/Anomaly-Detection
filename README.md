@@ -155,7 +155,7 @@ Variational Autoencoder (VAE), Anomaly Transformer, Naive Bayes를 결합한 앙
 
 ---
 
-## 💡 fetch from akime server 
+## 💡  ELASTIC SERVER에서 데이터 가지고 오기 
 ```python
 from elasticsearch import Elasticsearch
 from datetime import datetime
