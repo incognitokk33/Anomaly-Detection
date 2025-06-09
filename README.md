@@ -322,7 +322,7 @@ print(merged_df.head())
 ---
 
 
-## 💡 학습을 위해 세션 데이터 추출 및 전처리 작업
+## 💡 학습을 위해 스위치 포트 통계 데이터 추출 및 전처리 작업
 ```python
 # Interface names to filter
 interface_names = [ 
