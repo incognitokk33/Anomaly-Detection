@@ -268,18 +268,6 @@ def merge_json_data(json_list):
         data_list.append(extracted_data)
     return pd.DataFrame(data_list)
 
-# 데이터 병합을 위한 함수 정의
-# def merge_json_data(json_list):
-#     merged_data = {}
-#     for data in json_list:
-#         flat_data = flatten_json(data['_source'])
-#         for key, value in flat_data.items():
-#             # 같은 키가 있으면 업데이트, 없으면 새로 추가
-#             merged_data[key] = value
-#     return pd.DataFrame([merged_data])
-
-
-
 # 병합할 JSON 데이터 리스트
 json_data_list = hits_list #[json_data_1,json_data_2,json_data_3,json_data_4,json_data_5,json_data_6]
 
@@ -310,14 +298,8 @@ protocols = [
 for protocol in protocols:
     merged_df['pthot_'+protocol] = merged_df['protocol_list'].apply(lambda x: 1 if protocol in x else 0)
 
-
 columns_to_drop = [col for col in merged_df.columns if isinstance(merged_df[col][0], (list, str))]
 merged_df = merged_df.drop(columns=columns_to_drop)
-merged_df
-
-# 결과 확인
-print(merged_df.head())
-
 ```
 ---
 
