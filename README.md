@@ -840,6 +840,10 @@ plt.tight_layout()
 plt.show()
 
 ```
+---
+
+
+![image](https://github.com/user-attachments/assets/8a40318e-fd02-49b3-8957-2757f669feaf)
 
 ---
 
