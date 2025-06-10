@@ -362,7 +362,7 @@ pivot_table = filtered_data_all_interfaces.pivot_table(
 
 ```bash
 # 전체 파이프라인 학습 모드 실행(구현중)
-$ python main.py --mode train
+$ python 
 
 ```
 
